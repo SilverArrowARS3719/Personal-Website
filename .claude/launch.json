@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "fc27",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/ramsst/Desktop/Code/FC26", "run", "dev", "--", "-p", "3100"],
+      "port": 3100
+    }
+  ]
+}

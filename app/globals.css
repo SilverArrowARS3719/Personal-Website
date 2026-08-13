@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@theme {
+  /* deep navy page, never black */
+  --color-base: #0e1c33;
+  --color-base-2: #16274a;
+  --color-base-3: #1d3159;
+
+  /* light surfaces that float on the navy */
+  --color-panel: #fbfcfe;
+  --color-panel-2: #eef3fa;
+
+  /* text on light surfaces */
+  --color-ink: #0a1526;
+  --color-ink-soft: #4a5a72;
+
+  /* text on navy */
+  --color-paper: #eaf0f8;
+  --color-paper-soft: #9db0cb;
+
+  --color-line-dark: #22375f;
+  --color-line-light: #dde5f0;
+
+  /* #1f5fdd measured 4.39:1 as small text on --color-panel, just under the 4.5
+     minimum, so the base accent is a notch darker than it started */
+  --color-accent: #1a54c9;
+  --color-accent-hover: #2f6fed;
+  --color-accent-light: #5b93ff;
+
+  --radius-card: 20px;
+  --radius-tile: 12px;
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-grotesk), var(--font-body), sans-serif;
+  --font-mono: var(--font-mono-code), ui-monospace, SFMono-Regular, monospace;
+}
+
+/*
+  Backdrop.jsx paints its blooms, grid and crosshairs from these. They live
+  outside @theme because they are rgba washes rather than solid colours, and
+  they have to be retuned per theme or the glow burns out on white paper.
+*/
+:root {
+  color-scheme: dark;
+  --bd-bloom-1: rgba(47, 111, 237, 0.28);
+  --bd-bloom-2: rgba(35, 190, 190, 0.16);
+  --bd-grid: rgba(120, 160, 220, 0.07);
+  --bd-grid-bright: rgba(122, 170, 255, 0.85);
+  --bd-light: rgba(91, 147, 255, 0.22);
+  --bd-cross: rgba(91, 147, 255, 0.6);
+  --bd-grid-opacity: 0.5;
+}
+
+/*
+  Paper mode: the same drawing printed on a sheet instead of lit on a screen.
+  These override the @theme custom properties, and because every Tailwind
+  utility emits var(--color-*), the whole site re-colours with no class changes.
+
+  Note this is not a mechanical inversion. The design floats light cards on a
+  dark page; on paper those cards have to stay lighter than a background that
+  is already light, so panel/base/line are hand-tuned rather than flipped.
+*/
+[data-theme="paper"] {
+  color-scheme: light;
+
+  /*
+    Elevation has to invert with the theme. On navy, a raised surface is
+    LIGHTER than the page (base-2 sits above base). On paper the page is
+    already light, so a raised surface that is darker than the page reads as a
+    hole rather than a card, and every tile sinks into the background. So on
+    paper the page tints down and base-2 goes to pure white.
+  */
+  --color-base: #e7ecf5; /* drafting paper, tinted so white can sit on it */
+  --color-base-2: #ffffff; /* raised surfaces, cards, nav bar */
+  --color-base-3: #d5dded; /* active pill, the one recessed tone */
+
+  --color-panel: #ffffff;
+  --color-panel-2: #f2f6fc;
+
+  /* text on light cards is already dark, so these carry over */
+  --color-ink: #0a1526;
+  --color-ink-soft: #4a5a72;
+
+  /* text on the page itself flips from near-white to near-navy */
+  --color-paper: #10203c;
+  --color-paper-soft: #4d5f7d;
+
+  /* borders carry more of the work on paper, where there is no glow to
+     separate a card from the page */
+  --color-line-dark: #b7c5dc; /* hairline on the page */
+  /* a white card only clears the paper page by about 1.2:1, so its edge has to
+     do the separating; this is darker than the navy-theme equivalent */
+  --color-line-light: #c6d3e7;
+
+  --color-accent: #1b56cc;
+  --color-accent-hover: #14459f;
+  /* accent-light is used as small text on the page background, so on paper it
+     has to get darker, not lighter, to stay readable. Measured: #2a63d8 landed
+     at 4.16:1 on the card surface, under the 4.5 minimum, so it goes darker
+     again here. In paper mode this ends up darker than --color-accent, which
+     looks backwards but is correct: it is the accent that sits on the page. */
+  --color-accent-light: #1a4fb8;
+
+  --bd-bloom-1: rgba(47, 111, 237, 0.1);
+  --bd-bloom-2: rgba(35, 190, 190, 0.07);
+  --bd-grid: rgba(40, 80, 140, 0.07);
+  --bd-grid-bright: rgba(31, 95, 221, 0.45);
+  --bd-light: rgba(31, 95, 221, 0.09);
+  --bd-cross: rgba(31, 95, 221, 0.28);
+  --bd-grid-opacity: 0.9;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-base-3) transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 320ms ease, color 320ms ease;
+}
+
+::selection {
+  background: var(--color-accent-light);
+  color: var(--color-panel);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 3px;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* press feedback: every clickable target confirms the tap */
+.press {
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
