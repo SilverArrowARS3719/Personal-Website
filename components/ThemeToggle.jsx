@@ -38,11 +38,11 @@ export default function ThemeToggle({ className = "" }) {
       type="button"
       onClick={flip}
       aria-pressed={paper}
-      title={paper ? "Switch to blueprint" : "Switch to paper"}
-      className={`press relative flex h-10 w-10 items-center justify-center rounded-full border border-line-dark text-paper transition-colors duration-200 hover:border-accent-light hover:text-accent-light ${className}`}
+      title={paper ? "Switch to navy" : "Switch to paper"}
+      className={`press glass relative flex h-10 w-10 items-center justify-center rounded-full text-paper transition-colors duration-200 hover:text-accent-light ${className}`}
     >
       <span className="sr-only">
-        {paper ? "Switch to blueprint mode" : "Switch to paper mode"}
+        {paper ? "Switch to navy mode" : "Switch to paper mode"}
       </span>
       {/* a filled square on paper, an outlined one on blueprint: the same mark
           printed versus drawn */}

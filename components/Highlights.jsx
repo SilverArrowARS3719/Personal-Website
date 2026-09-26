@@ -50,7 +50,7 @@ export default function Highlights() {
           return (
             <Reveal key={h.award} delay={i * 0.06} className={`h-full ${span[i]}`}>
               {tone === "dark" ? (
-                <GlowTile corners radius="card" className="h-full" data-cursor>
+                <GlowTile corners radius="card" className="h-full">
                   <Body h={h} tone={tone} />
                 </GlowTile>
               ) : (

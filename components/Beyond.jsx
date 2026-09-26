@@ -21,7 +21,7 @@ export default function Beyond() {
 
         {rest.map((b, i) => (
           <Reveal key={b.title} delay={(i + 1) * 0.04} className="h-full">
-            <GlowTile corners radius="card" className="h-full" data-cursor>
+            <GlowTile corners radius="card" className="h-full">
               <div className="h-full p-7">
                 <h3 className="text-xl text-paper">{b.title}</h3>
                 <p className="mt-3 leading-relaxed text-paper-soft">{b.detail}</p>
@@ -33,7 +33,7 @@ export default function Beyond() {
         {/* a photo of him doing these things, not another square of text.
             Drop the real file at public/images/interests.jpg when ready. */}
         <Reveal delay={(rest.length + 1) * 0.04} className="sm:col-span-2 lg:col-span-3">
-          <div data-cursor>
+          <div>
             <ImageFrame
               src="/images/interests.jpg"
               alt="VA Ramaswami outside of building things"

@@ -46,7 +46,6 @@ export default function About() {
             <li key={d}>
               <Reveal delay={0.06 + i * 0.04} className="flex items-baseline">
                 <span
-                  data-cursor
                   className="whitespace-nowrap transition-opacity duration-300 group-hover/fields:opacity-45 hover:opacity-100!"
                 >
                   {d}

@@ -1,8 +1,8 @@
 import { Geist, Geist_Mono, Archivo } from "next/font/google";
 import { profile } from "@/lib/content";
 import Backdrop from "@/components/Backdrop";
-import Cursor from "@/components/Cursor";
 import Motion from "@/components/Motion";
+import SmoothScroll from "@/components/SmoothScroll";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import CommandPalette from "@/components/CommandPalette";
@@ -32,6 +32,9 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      // the pre-paint script below may add data-theme="paper" before React
+      // hydrates; that difference is intended, so don't warn about it
+      suppressHydrationWarning
     >
       <head>
         {/*
@@ -46,14 +49,15 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
-        <Motion>
-          <Backdrop />
-          <Cursor />
-          <Nav />
-          <CommandPalette />
-          <main>{children}</main>
-          <Footer />
-        </Motion>
+        <SmoothScroll>
+          <Motion>
+            <Backdrop />
+            <Nav />
+            <CommandPalette />
+            <main>{children}</main>
+            <Footer />
+          </Motion>
+        </SmoothScroll>
       </body>
     </html>
   );

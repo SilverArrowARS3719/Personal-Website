@@ -29,7 +29,7 @@ export default function Journey() {
             <li key={t.year} className="relative">
               <span className="absolute -left-8 top-8 h-2 w-2 -translate-x-[3.5px] rounded-full bg-accent-light ring-4 ring-base sm:-left-12" />
               <Reveal>
-                <GlowTile corners data-cursor>
+                <GlowTile corners>
                   <div className="p-6 sm:p-7">
                     <div className="font-mono text-[11px] tracking-[0.18em] text-accent-hover">
                       {t.year}

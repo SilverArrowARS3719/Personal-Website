@@ -63,7 +63,6 @@ export default function Gallery() {
             <button
               type="button"
               onClick={() => setOpen(i)}
-              data-cursor
               className="press group block w-full text-left"
               aria-label={`Open photo: ${p.alt}`}
             >

@@ -114,7 +114,7 @@ export default function CaseStudies() {
         <div className="grid gap-4 sm:grid-cols-2">
           {competitions.map((c, i) => (
             <Reveal key={c.name} delay={i * 0.04} className="h-full">
-              <GlowTile corners className="h-full" data-cursor>
+              <GlowTile corners className="h-full">
                 <div className="flex h-full gap-5 p-6">
                   <span className="mt-1 w-12 shrink-0 font-mono text-[11px] tracking-[0.16em] text-accent-light">
                     {c.year}

@@ -56,7 +56,6 @@ function Entry({ item, index }) {
           as="a"
           radius="card"
           corners
-          data-cursor
           href={item.href}
           target="_blank"
           rel="noreferrer"
@@ -65,7 +64,7 @@ function Entry({ item, index }) {
           {inner}
         </GlowTile>
       ) : (
-        <GlowTile radius="card" corners data-cursor className="h-full">
+        <GlowTile radius="card" corners className="h-full">
           {inner}
         </GlowTile>
       )}

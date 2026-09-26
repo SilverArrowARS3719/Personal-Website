@@ -1,7 +1,6 @@
 import About from "@/components/About";
 import Journey from "@/components/Journey";
 import Beyond from "@/components/Beyond";
-import Contact from "@/components/Contact";
 
 export const metadata = {
   title: "About VA Ramaswami",
@@ -15,7 +14,6 @@ export default function AboutPage() {
       <About />
       <Journey />
       <Beyond />
-      <Contact />
     </>
   );
 }

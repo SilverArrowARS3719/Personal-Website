@@ -2,9 +2,9 @@
 
 @theme {
   /* deep navy page, never black */
-  --color-base: #0e1c33;
-  --color-base-2: #16274a;
-  --color-base-3: #1d3159;
+  --color-base: #0a1628;
+  --color-base-2: #13223f;
+  --color-base-3: #1c2f55;
 
   /* light surfaces that float on the navy */
   --color-panel: #fbfcfe;
@@ -27,28 +27,36 @@
   --color-accent-hover: #2f6fed;
   --color-accent-light: #5b93ff;
 
+  /* the pale MOTO pill on navy. Its own token because in paper mode it has to
+     flip to a dark pill, which --color-paper (text on the page) cannot do */
+  --color-pill: #e6ecf5;
+  --color-pill-hover: #ffffff;
+  --color-pill-ink: #0a1628;
+
   --radius-card: 20px;
   --radius-tile: 12px;
 
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display-grotesk), var(--font-body), sans-serif;
   --font-mono: var(--font-mono-code), ui-monospace, SFMono-Regular, monospace;
+
+  /* one strong ease-out for every enter and every press, per Emil's rules */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /*
-  Backdrop.jsx paints its blooms, grid and crosshairs from these. They live
-  outside @theme because they are rgba washes rather than solid colours, and
-  they have to be retuned per theme or the glow burns out on white paper.
+  Backdrop.jsx paints from these. They live outside @theme because they are
+  rgba washes rather than solid colours, and they have to be retuned per theme
+  or the blooms burn out on white paper.
 */
 :root {
   color-scheme: dark;
-  --bd-bloom-1: rgba(47, 111, 237, 0.28);
-  --bd-bloom-2: rgba(35, 190, 190, 0.16);
-  --bd-grid: rgba(120, 160, 220, 0.07);
-  --bd-grid-bright: rgba(122, 170, 255, 0.85);
-  --bd-light: rgba(91, 147, 255, 0.22);
-  --bd-cross: rgba(91, 147, 255, 0.6);
-  --bd-grid-opacity: 0.5;
+  --bd-top: #0d1d38;
+  --bd-bottom: #060e1c;
+  --bd-bloom-1: rgba(47, 111, 237, 0.22);
+  --bd-bloom-2: rgba(40, 120, 220, 0.12);
+  --bd-vignette: rgba(3, 8, 18, 0.7);
+  --bd-grain-opacity: 0.05;
 }
 
 /*
@@ -101,22 +109,21 @@
      looks backwards but is correct: it is the accent that sits on the page. */
   --color-accent-light: #1a4fb8;
 
+  --color-pill: #10203c;
+  --color-pill-hover: #1c2f55;
+  --color-pill-ink: #f5f8fc;
+
+  --bd-top: #eef2f9;
+  --bd-bottom: #dfe6f2;
   --bd-bloom-1: rgba(47, 111, 237, 0.1);
-  --bd-bloom-2: rgba(35, 190, 190, 0.07);
-  --bd-grid: rgba(40, 80, 140, 0.07);
-  --bd-grid-bright: rgba(31, 95, 221, 0.45);
-  --bd-light: rgba(31, 95, 221, 0.09);
-  --bd-cross: rgba(31, 95, 221, 0.28);
-  --bd-grid-opacity: 0.9;
+  --bd-bloom-2: rgba(40, 120, 220, 0.06);
+  --bd-vignette: rgba(120, 140, 175, 0.18);
+  --bd-grain-opacity: 0.035;
 }
 
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-base-3) transparent;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 body {
@@ -151,15 +158,82 @@ body {
 
 /* press feedback: every clickable target confirms the tap */
 .press {
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 160ms var(--ease-out);
 }
 .press:active {
   transform: scale(0.97);
 }
 
+/*
+  Backdrop blooms. Constant ambient drift, so the motion is slow and runs on
+  the compositor (transform only). Two different periods so the pair never
+  visibly loops in sync.
+*/
+.bd-bloom {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  will-change: transform;
+}
+.bd-bloom-a {
+  left: -18%;
+  top: -22%;
+  height: 75vh;
+  width: 70vw;
+  background: radial-gradient(circle, var(--bd-bloom-1), transparent 65%);
+  animation: bd-drift-a 38s ease-in-out infinite alternate;
+}
+.bd-bloom-b {
+  right: -22%;
+  bottom: -25%;
+  height: 80vh;
+  width: 65vw;
+  background: radial-gradient(circle, var(--bd-bloom-2), transparent 65%);
+  animation: bd-drift-b 46s ease-in-out infinite alternate;
+}
+@keyframes bd-drift-a {
+  to {
+    transform: translate3d(14vw, 10vh, 0) scale(1.08);
+  }
+}
+@keyframes bd-drift-b {
+  to {
+    transform: translate3d(-12vw, -14vh, 0) scale(1.12);
+  }
+}
+
+/* film grain, tiled from an inline SVG so there is nothing to download */
+.bd-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--bd-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/*
+  Glass pill: the MOTO status chip and the secondary button share it. The
+  inner top highlight is what makes it read as a physical edge rather than a
+  flat translucent rectangle.
+*/
+.glass {
+  background: color-mix(in oklab, var(--color-base-2) 55%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-paper) 12%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--color-paper) 10%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--color-base-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+  .bd-bloom {
+    animation: none;
   }
   *,
   *::before,

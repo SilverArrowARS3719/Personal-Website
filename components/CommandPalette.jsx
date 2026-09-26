@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLenis } from "lenis/react";
 import {
   software,
   projects,
@@ -39,6 +40,7 @@ export default function CommandPalette() {
   const listRef = useRef(null);
   const restoreTo = useRef(null);
   const router = useRouter();
+  const lenis = useLenis();
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -105,13 +107,17 @@ export default function CommandPalette() {
     };
     window.addEventListener("keydown", onKey);
 
+    // Lenis drives the wheel itself, so hiding body overflow alone would still
+    // let the page scroll behind the dialog
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    lenis?.stop();
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      lenis?.start();
     };
-  }, [open, results.length, close]);
+  }, [open, results.length, close, lenis]);
 
   useEffect(() => {
     listRef.current
@@ -170,7 +176,11 @@ export default function CommandPalette() {
               </kbd>
             </div>
 
-            <div ref={listRef} className="max-h-[52vh] overflow-y-auto p-2">
+            <div
+              ref={listRef}
+              data-lenis-prevent
+              className="max-h-[52vh] overflow-y-auto p-2"
+            >
               {results.length === 0 ? (
                 <p className="px-3 py-8 text-center text-sm text-paper-soft">
                   Nothing matches “{q}”.
