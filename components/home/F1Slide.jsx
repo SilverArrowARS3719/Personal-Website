@@ -70,8 +70,8 @@ export default function F1Slide() {
   const p = stage.progress;
 
   // full 0 to 1 range, see the note on Chip in HeroSlide
-  const headOpacity = useTransform(p, [0, 0.3, 0.44, 1], [0, 0, 1, 1]);
-  const headY = useTransform(p, [0.3, 0.48], [24, 0]);
+  const headOpacity = useTransform(p, [0, 0.04, 0.18, 1], [0, 0, 1, 1]);
+  const headY = useTransform(p, [0.04, 0.22], [24, 0]);
   const headTransform = useMotionTemplate`translate3d(0, ${headY}px, 0)`;
 
   return (
@@ -85,7 +85,7 @@ export default function F1Slide() {
       </ul>
 
       <div aria-hidden="true" className="absolute inset-0 z-10">
-        {stage.mounted && <F1Scene progress={p} still={stage.still} active={stage.active} />}
+        {stage.mounted && <F1Scene progress={p} enter={stage.enter} still={stage.still} active={stage.active} />}
       </div>
 
       <motion.div

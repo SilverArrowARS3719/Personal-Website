@@ -234,11 +234,17 @@ function Rally({ progress, still }) {
     // contact sits 38% down the screen, so the flash clears the line of words
     // under the headline
     const floorY = -height * 0.47;
-    const fit = Math.min((height * 0.59) / C.y, (width * 0.95) / 3.6);
+    // on a wide screen the player stands left of centre with room for the
+    // shuttle to fly right; on a phone there is no room, so the player is
+    // centred and framed tighter (the smash itself, not the whole rally)
+    const narrow = width / height < 0.9;
+    const span = narrow ? 2.3 : 3.6;
+    const fit = Math.min((height * 0.59) / C.y, (width * 0.95) / span);
+    const shift = narrow ? -(PLAYER_X + 0.2) : -0.55;
     const zoom = 1 + 0.14 * Math.exp(-(((t - CONTACT_T) / 0.25) ** 2)) * (still ? 0 : 1);
     stage.current.scale.setScalar(fit * zoom);
     stage.current.position.set(
-      -0.55 * fit + fit * C.x * (1 - zoom),
+      shift * fit + fit * C.x * (1 - zoom),
       floorY + fit * C.y * (1 - zoom),
       0
     );

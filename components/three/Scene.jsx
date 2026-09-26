@@ -13,16 +13,17 @@ function Aim({ at }) {
 }
 
 /*
-  One transparent canvas per slide. The slide mounts it only when it gets
-  near the viewport and pauses the render loop (frameloop "never") while it
-  is off screen, so at most one scene is ever drawing. It takes no pointer
+  One transparent canvas per slide. Off screen it runs on demand: it draws
+  its first frame straight away, which compiles the shaders and bakes the
+  lighting before the reader gets there, then sits idle, so only the scene on
+  screen is ever drawing every frame. It takes no pointer
   events: the page under and over it stays clickable.
 */
 export default function Scene({ active = true, camera, aim = [0, 0, 0], children }) {
   return (
     <Canvas
       dpr={[1, 1.75]}
-      frameloop={active ? "always" : "never"}
+      frameloop={active ? "always" : "demand"}
       camera={camera}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ pointerEvents: "none" }}

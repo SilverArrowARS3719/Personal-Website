@@ -23,8 +23,12 @@ function useStill() {
 /*
   Everything one scroll slide needs:
   - progress: 0 when the slide pins at the top of the screen, 1 as it lets go
-  - mounted:  true once the slide has come within a screen of view, so its 3D
-              scene (and three.js itself) only loads when it is about to be seen
+  - enter:    0 as the slide's top comes up from the bottom edge, 1 as it pins
+  - mounted:  true once the page has finished loading and gone idle (or
+              sooner, if the slide is already close). Every scene loads and
+              compiles its shaders ahead of time, off screen: loading only when
+              a slide came near took seconds on a first visit, and the reader
+              had scrolled past before the car or the smash was ready
   - active:   true only while the slide is actually on screen, so its render
               loop can pause the rest of the time
   - still:    the reader asked for reduced motion
@@ -35,8 +39,12 @@ export function useStage() {
     target: ref,
     offset: ["start start", "end end"],
   });
+  const { scrollYProgress: enter } = useScroll({
+    target: ref,
+    offset: ["start end", "start start"],
+  });
   const still = useStill();
-  const near = useInView(ref, { margin: "100% 0px 100% 0px" });
+  const near = useInView(ref, { margin: "200% 0px 200% 0px" });
   const active = useInView(ref);
   const [mounted, setMounted] = useState(false);
 
@@ -44,7 +52,23 @@ export function useStage() {
     if (near) setMounted(true);
   }, [near]);
 
-  return { ref, progress: scrollYProgress, still, mounted, active };
+  useEffect(() => {
+    let idle;
+    const go = () => {
+      idle = window.requestIdleCallback
+        ? requestIdleCallback(() => setMounted(true), { timeout: 2000 })
+        : setTimeout(() => setMounted(true), 300);
+    };
+    if (document.readyState === "complete") go();
+    else window.addEventListener("load", go, { once: true });
+    return () => {
+      window.removeEventListener("load", go);
+      if (window.cancelIdleCallback) cancelIdleCallback(idle);
+      clearTimeout(idle);
+    };
+  }, []);
+
+  return { ref, progress: scrollYProgress, enter, still, mounted, active };
 }
 
 /*

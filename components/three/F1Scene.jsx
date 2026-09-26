@@ -42,22 +42,24 @@ function Pool() {
   );
 }
 
-function Rig({ progress, still }) {
+function Rig({ progress, enter, still }) {
   const rig = useRef(null);
   const wheels = useRef([]);
   const viewport = useThree((s) => s.viewport);
-  const st = useRef({ p: 0 });
+  const st = useRef({ p: 0, e: 0 });
 
   useFrame((_, dt) => {
     const s = st.current;
-    s.p = damp(s.p, still ? 0.66 : progress.get(), 4.5, Math.min(dt, 0.1));
+    s.p = damp(s.p, still ? 0.5 : progress.get(), 4.5, Math.min(dt, 0.1));
+    s.e = damp(s.e, still ? 1 : enter.get(), 4.5, Math.min(dt, 0.1));
     const p = s.p;
 
     const fit = clamp((viewport.width * 0.6) / CAR_LENGTH, 0.32, 1.0);
-    // first third: drive in from off the right edge, nose first
-    const drive = 1 - (1 - clamp(p / 0.32, 0, 1)) ** 3;
-    // the rest: turntable from side-on, through head-on, to three-quarter
-    const turn = smootherstep(clamp((p - 0.32) / 0.68, 0, 1), 0, 1);
+    // while the slide rises into view: drive in from off the right edge, nose
+    // first, so the car is already parked when the slide pins
+    const drive = 1 - (1 - clamp((s.e - 0.25) / 0.7, 0, 1)) ** 3;
+    // while pinned: turntable from side-on, through head-on, to three-quarter
+    const turn = smootherstep(clamp(p / 0.9, 0, 1), 0, 1);
     const scale = fit * (1 + 0.14 * turn);
 
     const startX = viewport.width / 2 + (CAR_LENGTH / 2 + 0.4) * fit;
@@ -91,7 +93,7 @@ function Rig({ progress, still }) {
   );
 }
 
-export default function F1Scene({ progress, still, active }) {
+export default function F1Scene({ progress, enter, still, active }) {
   return (
     <Scene
       active={active}
@@ -99,7 +101,7 @@ export default function F1Scene({ progress, still, active }) {
       aim={[0, 0.1, 0]}
     >
       <Studio />
-      <Rig progress={progress} still={still} />
+      <Rig progress={progress} enter={enter} still={still} />
     </Scene>
   );
 }

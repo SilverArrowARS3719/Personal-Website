@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "@react-three/fiber";
 import * as THREE from "three";
 import Racket, { RACKET_HEAD_Y } from "./Racket";
@@ -9,9 +9,9 @@ import { BODY } from "./smashClip";
 import { kit } from "@/lib/content";
 
 /*
-  VA as a 3D figure: brown skin, big black curly hair, a navy kit worn loose
-  (shirt untucked over the shorts) with the site's blue on the collar, cuffs
-  and soles.
+  VA as a 3D figure: brown skin, big black curly hair under a white
+  headband, a navy kit worn loose (shirt untucked over the shorts) with the
+  site's blue on the collar, cuffs and soles.
 
   The limbs and clothes are skinned meshes on a real skeleton, the way a game
   character is built: each arm, leg, sleeve, sock and the shirt is ONE smooth
@@ -291,6 +291,14 @@ function useMaterials() {
         sheenColor: "#4a5570",
       }),
       sock: new THREE.MeshStandardMaterial({ color: "#f2f4f7", roughness: 0.9 }),
+      // towelling: very rough, with a soft sheen at the edges
+      band: new THREE.MeshPhysicalMaterial({
+        color: "#f6f7f9",
+        roughness: 0.95,
+        sheen: 0.6,
+        sheenColor: "#ffffff",
+        sheenRoughness: 0.9,
+      }),
       shoe: new THREE.MeshPhysicalMaterial({ color: "#f7f8fa", roughness: 0.38, clearcoat: 0.5 }),
       eye: new THREE.MeshStandardMaterial({ color: "#0c0908", roughness: 0.2 }),
       glint: new THREE.MeshBasicMaterial({ color: "#ffffff" }),
@@ -315,17 +323,78 @@ function seeded(seed) {
 const SKULL = new THREE.Vector3(0, 0.11, 0);
 
 /*
-  Big curly hair that stands out from the head: a dark fill for coverage,
-  then about 450 curls scattered over a volume well outside the skull
-  (6 cm out at the sides, 8 cm on top), kept off the face and the ears.
-  Each curl gets its own shade between black and dark brown for depth.
+  The white sweatband. It sits across the forehead and tips down toward the
+  back, like a band worn for play: the hair is squeezed under it and puffs
+  out above it. Everything is in head bone space.
+*/
+const BAND = {
+  centre: new THREE.Vector3(0, 0.163, -0.03),
+  tilt: -0.3, // front edge higher than the back
+  rx: 0.112, // half-widths of the ellipse it wraps round
+  rz: 0.143,
+  height: 0.04,
+  thick: 0.012,
+};
+const bandFrame = new THREE.Matrix4().compose(
+  BAND.centre,
+  new THREE.Quaternion().setFromEuler(new THREE.Euler(BAND.tilt, 0, 0)),
+  new THREE.Vector3(1, 1, 1)
+);
+const bandInverse = bandFrame.clone().invert();
+
+function Headband({ material }) {
+  const geometry = useMemo(() => {
+    // a rounded-rectangle cross-section, spun round and squashed to an ellipse
+    const h = BAND.height / 2;
+    const t = BAND.thick;
+    const r = t * 0.45;
+    const pts = [];
+    const corner = (cx, cy, a0) => {
+      for (let i = 0; i <= 4; i++) {
+        const a = a0 + (i / 4) * (Math.PI / 2);
+        pts.push(new THREE.Vector2(cx + Math.cos(a) * r, cy + Math.sin(a) * r));
+      }
+    };
+    corner(1 + t - r, -h + r, -Math.PI / 2);
+    corner(1 + t - r, h - r, 0);
+    corner(1 + r, h - r, Math.PI / 2);
+    corner(1 + r, -h + r, Math.PI);
+    pts.push(pts[0].clone());
+    // the lathe radius is 1 + a few cm, so scale the ring, not the band
+    const geo = new THREE.LatheGeometry(
+      pts.map((p) => new THREE.Vector2(p.x, p.y)),
+      96
+    );
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      const len = Math.hypot(x, z);
+      const out = len - 1; // how far past the unit ring this vertex is
+      pos.setXYZ(i, (x / len) * (BAND.rx + out), pos.getY(i), (z / len) * (BAND.rz + out));
+    }
+    geo.computeVertexNormals();
+    geo.applyMatrix4(bandFrame);
+    return geo;
+  }, []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry} material={material} />;
+}
+
+/*
+  Big curly hair pushed right out from the head: a dark fill for coverage,
+  then about 640 curls scattered over a volume well outside the skull. The
+  headband pinches it: no curls in or below the band, and a full puff above
+  it that grows toward the crown. Kept
+  off the face and the ears. Each curl gets its own shade between black and
+  dark brown for depth.
 */
 function Curls({ material }) {
   const mesh = useMemo(() => {
     const rand = seeded(23);
-    const centre = new THREE.Vector3(0, 0.165, -0.02);
-    const radii = new THREE.Vector3(0.17, 0.14, 0.175);
-    const count = 450;
+    const centre = new THREE.Vector3(0, 0.175, -0.025);
+    const radii = new THREE.Vector3(0.205, 0.165, 0.2);
+    const count = 640;
     const geo = new THREE.IcosahedronGeometry(1, 1);
     const inst = new THREE.InstancedMesh(geo, material, count);
     const dark = new THREE.Color("#0c0807");
@@ -334,17 +403,37 @@ function Curls({ material }) {
     const m4 = new THREE.Matrix4();
     const dir = new THREE.Vector3();
     const p = new THREE.Vector3();
+    const local = new THREE.Vector3();
     let n = 0;
-    while (n < count) {
+    let tries = 0;
+    while (n < count && tries++ < 200000) {
       dir.set(rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1);
       const l = dir.lengthSq();
       if (l > 1 || l < 0.02) continue;
       dir.normalize();
-      p.copy(dir).multiply(radii).multiplyScalar(0.9 + rand() * 0.14).add(centre);
+      p.copy(dir).multiply(radii).multiplyScalar(0.86 + rand() * 0.16).add(centre);
+
+      // where this curl sits against the band: v is height above its middle
+      local.copy(p).applyMatrix4(bandInverse);
+      const v = local.y;
+      const r = 0.03 + rand() * 0.024;
+      if (Math.abs(v) < BAND.height / 2 + r) continue; // the band itself
+      // under the band the hair is short and flat, which the dark fill
+      // already draws: curls there only clumped into a bun
+      if (v < 0) continue;
+      // above it the hair springs back out; the squeeze eases off over 6 cm
+      const ease = THREE.MathUtils.smoothstep(v, BAND.height / 2, BAND.height / 2 + 0.06);
+      const k = Math.hypot(local.x / BAND.rx, local.z / BAND.rz);
+      const hug = 1.02 + (k - 1.02) * ease;
+      if (k > hug) {
+        local.x *= hug / k;
+        local.z *= hug / k;
+        p.copy(local).applyMatrix4(bandFrame);
+      }
+
       if (p.z > 0.02 && p.y < 0.2) continue; // the face: hairline above the brows
       if (p.y < 0.13 && p.z > -0.05 && Math.abs(p.x) > 0.08) continue; // the ears
       if (p.y < 0.04) continue; // below the nape
-      const r = 0.03 + rand() * 0.022;
       m4.compose(
         p,
         new THREE.Quaternion().setFromEuler(new THREE.Euler(rand() * 6, rand() * 6, rand() * 6)),
@@ -354,6 +443,7 @@ function Curls({ material }) {
       inst.setColorAt(n, colour.copy(dark).lerp(warm, rand() ** 2));
       n++;
     }
+    inst.count = n;
     inst.instanceMatrix.needsUpdate = true;
     inst.instanceColor.needsUpdate = true;
     return inst;
@@ -401,6 +491,12 @@ function Head({ m, hair }) {
         </mesh>
         <Curls material={m.curl} />
       </group>
+      {/* short hair under the band: a close cap over the back of the skull,
+          from ear to ear, down to the nape */}
+      <mesh position={SKULL} scale={[0.95, 1, 1]} material={m.hairFill}>
+        <sphereGeometry args={[0.125, 40, 24, Math.PI + 0.25, Math.PI - 0.5, 0.3, 1.95]} />
+      </mesh>
+      <Headband material={m.band} />
     </>
   );
 }
@@ -572,51 +668,57 @@ export default function Player({ rig }) {
     <>
       <primitive object={body.root} />
 
-      {createPortal(<Head m={m} hair={hair} />, B.head)}
+      {/* keyed to the skeleton: when it is rebuilt (a hot reload in
+          development re-runs the memo), every part is remounted onto the new
+          bones instead of staying on the old ones, which left a headless,
+          handless player */}
+      <Fragment key={body.root.uuid}>
+        {createPortal(<Head m={m} hair={hair} />, B.head)}
 
-      {/* collar in the accent blue, and the logo across the chest */}
-      {createPortal(
-        <>
-          <mesh position-y={0.262} rotation-x={Math.PI / 2} scale={[1, 0.94, 1]} material={m.accent}>
-            <torusGeometry args={[0.068, 0.011, 8, 40]} />
-          </mesh>
-          <Logo />
-        </>,
-        B.chest
-      )}
-      {createPortal(<Cuff m={m} />, B.rShoulder)}
-      {createPortal(<Cuff m={m} />, B.lShoulder)}
+        {/* collar in the accent blue, and the logo across the chest */}
+        {createPortal(
+          <>
+            <mesh position-y={0.262} rotation-x={Math.PI / 2} scale={[1, 0.94, 1]} material={m.accent}>
+              <torusGeometry args={[0.068, 0.011, 8, 40]} />
+            </mesh>
+            <Logo />
+          </>,
+          B.chest
+        )}
+        {createPortal(<Cuff m={m} />, B.rShoulder)}
+        {createPortal(<Cuff m={m} />, B.lShoulder)}
 
-      {/* racket hand: a fist round the grip, racket continuing the forearm */}
-      {createPortal(
-        <>
-          <mesh position-y={-0.05} scale={[0.045, 0.052, 0.043]} material={m.skin}>
-            <sphereGeometry args={[1, 20, 16]} />
-          </mesh>
-          <group position-y={-0.06} rotation-x={Math.PI}>
-            <group scale={0.1}>
-              <Racket />
-              <object3D ref={strings} position-y={RACKET_HEAD_Y} />
-              <object3D ref={throat} position-y={2.9} />
+        {/* racket hand: a fist round the grip, racket continuing the forearm */}
+        {createPortal(
+          <>
+            <mesh position-y={-0.05} scale={[0.045, 0.052, 0.043]} material={m.skin}>
+              <sphereGeometry args={[1, 20, 16]} />
+            </mesh>
+            <group position-y={-0.06} rotation-x={Math.PI}>
+              <group scale={0.1}>
+                <Racket />
+                <object3D ref={strings} position-y={RACKET_HEAD_Y} />
+                <object3D ref={throat} position-y={2.9} />
+              </group>
             </group>
-          </group>
-        </>,
-        B.rWrist
-      )}
-      {createPortal(
-        <>
-          <mesh position-y={-0.055} scale={[0.04, 0.056, 0.03]} material={m.skin}>
-            <sphereGeometry args={[1, 20, 16]} />
-          </mesh>
-          <mesh position={[0.028, -0.035, 0.02]} material={m.skin}>
-            <sphereGeometry args={[0.016, 12, 10]} />
-          </mesh>
-        </>,
-        B.lWrist
-      )}
+          </>,
+          B.rWrist
+        )}
+        {createPortal(
+          <>
+            <mesh position-y={-0.055} scale={[0.04, 0.056, 0.03]} material={m.skin}>
+              <sphereGeometry args={[1, 20, 16]} />
+            </mesh>
+            <mesh position={[0.028, -0.035, 0.02]} material={m.skin}>
+              <sphereGeometry args={[0.016, 12, 10]} />
+            </mesh>
+          </>,
+          B.lWrist
+        )}
 
-      {createPortal(<Shoe m={m} geometry={shoe} />, B.rAnkle)}
-      {createPortal(<Shoe m={m} geometry={shoe} />, B.lAnkle)}
+        {createPortal(<Shoe m={m} geometry={shoe} />, B.rAnkle)}
+        {createPortal(<Shoe m={m} geometry={shoe} />, B.lAnkle)}
+      </Fragment>
     </>
   );
 }
